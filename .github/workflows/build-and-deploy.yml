@@ -2,7 +2,7 @@ name: Build and Deploy to GitHub Pages
 
 on:
   schedule:
-    - cron: '0 6 * * *'  # Elke dag om 06:00 UTC
+    - cron: '0 * * * *'  # Every hour, every day
   workflow_dispatch:       # Handmatig triggerbaar
 
 jobs:
