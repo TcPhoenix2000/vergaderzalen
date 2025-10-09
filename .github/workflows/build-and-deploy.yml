@@ -2,8 +2,11 @@ name: Build and Deploy to GitHub Pages
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # Every hour, every day
+    - cron: "*/30 * * * *"  # Every hour, every day
   workflow_dispatch:       # Handmatig triggerbaar
+
+permissions:
+  contents: write
 
 jobs:
   build:
