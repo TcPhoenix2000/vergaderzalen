@@ -38,17 +38,7 @@ const fetch = require('node-fetch');
       if (currentSlot) {
         const start = new Date(currentSlot.startDate);
         const end = new Date(currentSlot.endDate);
-        slotTime = `${start.toLocaleTimeString('nl-BE', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: false,
-                      timeZone: 'Europe/Brussels'
-                    })} - ${end.toLocaleTimeString('nl-BE', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: false,
-                      timeZone: 'Europe/Brussels'
-                    })}`;
+        slotTime = ${start.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12: false})} - ${end.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12: false})};
         statusText = currentSlot.available ? "✅ Beschikbaar" : "❌ Bezet";
         statusColor = currentSlot.available ? "green" : "red";
       }
