@@ -21,6 +21,11 @@ jobs:
 
       - name: Generate static HTML
         run: node generate_page.js
+        
+      - name: Setup Git user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions 61475999+TcPhoenix2000@users.noreply.github.com"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
