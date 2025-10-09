@@ -18,12 +18,18 @@ const fetch = require('node-fetch');
     const rows = data.flatMap(roomEntry => {
       const roomName = roomEntry.room?.text || "Onbekende locatie";
 
+      // 🔄 Huidige tijd in Brussels timezone
+      const brusselsNow = new Date(
+        new Date().toLocaleString("en-US", { timeZone: "Europe/Brussels" })
+      );
+      
       // Vind momenteel actieve slot
       const currentSlot = (roomEntry.slots || []).find(slot => {
         const start = new Date(slot.startDate);
         const end = new Date(slot.endDate);
-        return now >= start && now < end;
+        return brusselsNow >= start && brusselsNow < end;
       });
+
 
       let statusText = "Geen slot actief";
       let statusColor = "#999";
