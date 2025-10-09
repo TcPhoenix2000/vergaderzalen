@@ -3,13 +3,15 @@ name: Build and Deploy to GitHub Pages
 on:
   schedule:
     - cron: '0 6 * * *'  # Elke dag om 06:00 UTC
-  workflow_dispatch:       # Kan handmatig getriggerd worden
+  workflow_dispatch:       # Handmatig triggerbaar
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -21,15 +23,19 @@ jobs:
 
       - name: Generate static HTML
         run: node generate_page.js
-        
+
+      - name: List files (debug)
+        run: ls -alh
+
       - name: Setup Git user
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions 61475999+TcPhoenix2000@users.noreply.github.com"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./        # index.html in root
-          force_orphan: true 
+          publish_dir: ./          # index.html staat in root
+          publish_branch: gh-pages
+          force_orphan: true       # maak nieuwe orphan branch om conflicts te voorkomen
