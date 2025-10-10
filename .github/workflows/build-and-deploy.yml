@@ -23,6 +23,9 @@ jobs:
 
       - name: Install dependencies
         run: npm install node-fetch@2
+      - name: Install dependencies luxon
+        run: npm install luxon
+      
 
       - name: Generate static HTML
         run: node generate_page.js
