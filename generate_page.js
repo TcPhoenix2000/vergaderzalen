@@ -38,6 +38,7 @@ const { DateTime } = require('luxon');
         const end = DateTime.fromISO(currentSlot.endDate).setZone('Europe/Brussels');
 
         slotTime = `${start.toFormat('HH:mm')} - ${end.toFormat('HH:mm')}`;
+        subject = currentSlot.subject || "-";
         statusText = currentSlot.available ? "✅ Beschikbaar" : "❌ Bezet";
         statusColor = currentSlot.available ? "green" : "red";
       }
@@ -46,6 +47,7 @@ const { DateTime } = require('luxon');
         <td>${brusselsNow.toFormat('dd/MM/yyyy')}</td>
         <td>${roomName}</td>
         <td>${slotTime}</td>
+        <td>${subject}</td>
         <td style="color:${statusColor}; font-weight:bold;">${statusText}</td>
       </tr>`;
     });
