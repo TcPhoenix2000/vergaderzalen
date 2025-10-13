@@ -31,6 +31,7 @@ const { DateTime } = require('luxon');
       let statusText = "Geen slot actief";
       let statusColor = "#999";
       let slotTime = "-";
+      let subject = "-";
 
       if (currentSlot) {
         const start = DateTime.fromISO(currentSlot.startDate).setZone('Europe/Brussels');
