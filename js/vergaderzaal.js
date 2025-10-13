@@ -24,6 +24,7 @@ async function loadSlots() {
     data.forEach(roomEntry => {
       const roomName = roomEntry.room?.text || "Onbekende locatie";
       const slots = roomEntry.slots || [];
+       
 
       // Find slot that is currently active
       const currentSlot = slots.find(slot => {
@@ -31,6 +32,8 @@ async function loadSlots() {
         const end = new Date(slot.endDate);
         return now >= start && now < end;
       });
+
+      //const subject=
 
       let statusText = "Geen slot actief";
       let statusColor = "#999";
@@ -44,6 +47,15 @@ async function loadSlots() {
         statusColor = currentSlot.available ? "green" : "red";
       }
 
+      /*rows.push(`
+        <tr>
+          <td>${now.toLocaleDateString()}</td>
+          <td>${subject}</td>
+          <td>${roomName}</td>
+          <td>${slotTime}</td>
+          <td style="color:${statusColor}; font-weight:bold;">${statusText}</td>
+        </tr>
+      `);*/
       rows.push(`
         <tr>
           <td>${now.toLocaleDateString()}</td>
