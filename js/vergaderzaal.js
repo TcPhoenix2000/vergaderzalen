@@ -1,4 +1,5 @@
-// Haalt de boekingen live op (de API staat CORS toe) en ververst elke minuut.
+// Gedeelde code: generate_page.js gebruikt dit om de statische index.html te bouwen,
+// in de browser ververst hetzelfde script de tabel elke minuut live (de API staat CORS toe).
 const API_URL = "https://api.agsoknokke-heist.be/api/v1/booking/slots";
 const REFRESH_MS = 60 * 1000;
 const TZ = "Europe/Brussels";
@@ -33,32 +34,40 @@ function renderRow(roomName, slot) {
   </tr>`;
 }
 
+function buildRows(data, now) {
+  const rows = data.flatMap(entry => {
+    const roomName = entry.room?.text || "Onbekende locatie";
+    const slots = relevantSlots(entry.slots || [], now);
+    return slots.length
+      ? slots.map(slot => renderRow(roomName, slot))
+      : [`<tr><td>${fmtDate.format(now)}</td><td>${escapeHtml(roomName)}</td><td>-</td><td>-</td><td class="none">Geen slots meer vandaag</td></tr>`];
+  });
+  return rows.length ? rows.join("\n") :"<tr><td colspan='5'>Geen slots gevonden.</td></tr>";
+}
+
+async function fetchSlots(now) {
+  const res = await fetch(`${API_URL}?date=${encodeURIComponent(now.toISOString())}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 async function loadSlots() {
-  const tableBody = document.querySelector("#slotsTable tbody");
   const updated = document.getElementById("updated");
   const now = new Date();
-
   try {
-    const res = await fetch(`${API_URL}?date=${encodeURIComponent(now.toISOString())}`, { cache: "no-store" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-
-    const rows = data.flatMap(entry => {
-      const roomName = entry.room?.text || "Onbekende locatie";
-      const slots = relevantSlots(entry.slots || [], now);
-      return slots.length
-        ? slots.map(slot => renderRow(roomName, slot))
-        : [`<tr><td>${fmtDate.format(now)}</td><td>${escapeHtml(roomName)}</td><td>-</td><td>-</td><td class="none">Geen slots meer vandaag</td></tr>`];
-    });
-
-    tableBody.innerHTML = rows.length ? rows.join("") : "<tr><td colspan='5'>Geen slots gevonden.</td></tr>";
+    const data = await fetchSlots(now);
+    document.querySelector("#slotsTable tbody").innerHTML = buildRows(data, now);
     updated.textContent = `Laatst bijgewerkt: ${fmtTime.format(now)}`;
   } catch (err) {
-    // Laat de vorige data staan bij een tijdelijke fout; toon enkel een melding.
+    // Laat de vorige (statische) data staan bij een tijdelijke fout; toon enkel een melding.
     console.error("Fout bij ophalen slots:", err);
     updated.textContent = `Bijwerken mislukt (${err.message}), nieuwe poging binnen een minuut.`;
   }
 }
 
-loadSlots();
-setInterval(loadSlots, REFRESH_MS);
+if (typeof module !== "undefined") {
+  module.exports = { buildRows, fetchSlots, fmtTime };
+} else {
+  loadSlots();
+  setInterval(loadSlots, REFRESH_MS);
+}

@@ -1,8 +1,10 @@
-name: Deploy to GitHub Pages
+name: Build and Deploy to GitHub Pages
 
-# De pagina haalt de data zelf live op in de browser, dus geen cron meer nodig:
-# enkel opnieuw deployen wanneer de code wijzigt.
 on:
+  schedule:
+    # Elk half uur, 04:00-17:59 UTC (= 06:00-19:59 zomer / 05:00-18:59 winter in Brussel).
+    # Minuten 7 en 37 i.p.v. 0/30: op het volle en halve uur worden GitHub-crons het vaakst vertraagd of overgeslagen.
+    - cron: "7,37 4-17 * * *"
   push:
     branches: [main]
   workflow_dispatch:
@@ -10,16 +12,22 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Collect site files
-        run: |
-          mkdir _site
-          cp -r index.html css js _site/
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Generate static HTML
+        run: node generate_page.js
 
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
