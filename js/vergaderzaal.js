@@ -1,72 +1,64 @@
+// Haalt de boekingen live op (de API staat CORS toe) en ververst elke minuut.
+const API_URL = "https://api.agsoknokke-heist.be/api/v1/booking/slots";
+const REFRESH_MS = 60 * 1000;
+const TZ = "Europe/Brussels";
+
+const fmtTime = new Intl.DateTimeFormat("nl-BE", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
+const fmtDate = new Intl.DateTimeFormat("nl-BE", { timeZone: TZ, day: "2-digit", month: "2-digit", year: "numeric" });
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// Huidige slot + volgende; is er geen actief slot, dan enkel de eerstvolgende.
+function relevantSlots(slots, now) {
+  const i = slots.findIndex(s => now >= new Date(s.startDate) && now < new Date(s.endDate));
+  if (i >= 0) return slots.slice(i, i + 2);
+  const next = slots.find(s => new Date(s.startDate) > now);
+  return next ? [next] : [];
+}
+
+function renderRow(roomName, slot) {
+  const start = new Date(slot.startDate);
+  const end = new Date(slot.endDate);
+  const status = slot.available
+    ? '<td class="available">✅ Beschikbaar</td>'
+    : '<td class="busy">❌ Bezet</td>';
+  return `<tr>
+    <td>${fmtDate.format(start)}</td>
+    <td>${escapeHtml(roomName)}</td>
+    <td>${fmtTime.format(start)} - ${fmtTime.format(end)}</td>
+    <td>${escapeHtml(slot.subject || "-")}</td>
+    ${status}
+  </tr>`;
+}
+
 async function loadSlots() {
   const tableBody = document.querySelector("#slotsTable tbody");
-  tableBody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
-
-  // Get Monday of the current week
+  const updated = document.getElementById("updated");
   const now = new Date();
-  
-  const dateStr = now.toUTCString();
-  const encodedDate = encodeURIComponent(dateStr);
-  const url = `https://api.agsoknokke-heist.be/api/v1/booking/slots?date=${encodedDate}`;
-
-  console.log("🔍 Fetching booking slots from:", url);
 
   try {
-    const response = await fetch(url);
-    console.log("📡 Response status:", response.status, response.statusText);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const res = await fetch(`${API_URL}?date=${encodeURIComponent(now.toISOString())}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
 
-    const data = await response.json();
-    console.log("✅ API data received:", data);
-
-    const rows = [];
-
-    data.forEach(roomEntry => {
-      const roomName = roomEntry.room?.text || "Onbekende locatie";
-      const slots = roomEntry.slots || [];
-      
-       
-
-      // Find slot that is currently active
-      const currentSlot = slots.find(slot => {
-        const start = new Date(slot.startDate);
-        const end = new Date(slot.endDate);
-        return now >= start && now < end;
-      });
-
-
-      let statusText = "Geen slot actief";
-      let statusColor = "#999";
-      let slotTime = "-";
-      let subject = "-";
-
-      if (currentSlot) {
-        const start = new Date(currentSlot.startDate);
-        const end = new Date(currentSlot.endDate);
-        slotTime = `${start.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} - ${end.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
-        subject = currentSlot.subject || "-";
-        statusText = currentSlot.available ? "✅ Beschikbaar" : "❌ Bezet";
-        statusColor = currentSlot.available ? "green" : "red";
-      }
-
-      rows.push(`
-        <tr>
-          <td>${now.toLocaleDateString()}</td>
-          <td>${roomName}</td>
-          <td>${slotTime}</td>
-          <td>${subject}</td>
-          <td style="color:${statusColor}; font-weight:bold;">${statusText}</td>
-        </tr>
-      `);
+    const rows = data.flatMap(entry => {
+      const roomName = entry.room?.text || "Onbekende locatie";
+      const slots = relevantSlots(entry.slots || [], now);
+      return slots.length
+        ? slots.map(slot => renderRow(roomName, slot))
+        : [`<tr><td>${fmtDate.format(now)}</td><td>${escapeHtml(roomName)}</td><td>-</td><td>-</td><td class="none">Geen slots meer vandaag</td></tr>`];
     });
 
-    tableBody.innerHTML = rows.length ? rows.join("") : "<tr><td colspan='4'>Geen slots gevonden.</td></tr>";
-
+    tableBody.innerHTML = rows.length ? rows.join("") : "<tr><td colspan='5'>Geen slots gevonden.</td></tr>";
+    updated.textContent = `Laatst bijgewerkt: ${fmtTime.format(now)}`;
   } catch (err) {
-    console.error("❌ Error fetching slots:", err);
-    tableBody.innerHTML = `<tr><td colspan='4'>Error: ${err.message}</td></tr>`;
+    // Laat de vorige data staan bij een tijdelijke fout; toon enkel een melding.
+    console.error("Fout bij ophalen slots:", err);
+    updated.textContent = `Bijwerken mislukt (${err.message}), nieuwe poging binnen een minuut.`;
   }
 }
 
-document.addEventListener("DOMContentLoaded", loadSlots);
-
+loadSlots();
+setInterval(loadSlots, REFRESH_MS);

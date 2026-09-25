@@ -1,51 +1,30 @@
-name: Build and Deploy to GitHub Pages
+name: Deploy to GitHub Pages
 
+# De pagina haalt de data zelf live op in de browser, dus geen cron meer nodig:
+# enkel opnieuw deployen wanneer de code wijzigt.
 on:
-  schedule:
-  - cron: "30 7-16 * * *"  # Every hour between 7:30 and 17:00, all days
-  
-  workflow_dispatch:       # Handmatig triggerbaar
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
-  
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      - name: Install dependencies
-        run: npm install node-fetch@2
-      - name: Install dependencies luxon
-        run: npm install luxon
-      
-
-      - name: Generate static HTML
-        run: node generate_page.js
-
-      - name: List files (debug)
-        run: ls -alh
-
-      - name: Setup Git user
+      - name: Collect site files
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir _site
+          cp -r index.html css js _site/
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./          # index.html staat in root
+          publish_dir: ./_site
           publish_branch: gh-pages
-          force_orphan: true       # maak nieuwe orphan branch om conflicts te voorkomen
+          force_orphan: true
